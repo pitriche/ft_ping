@@ -23,7 +23,7 @@ RESET   = \033[0m
 
 CC = gcc
 
-FL_OPTI = -O3 -flto
+FL_OPTI = -O2 -flto
 FLAGS = -Wall -Wextra -Wconversion -Wuninitialized $(FL_OPTI)
 LFLAGS = $(FLAGS)
 CFLAGS = -c $(FLAGS)
@@ -41,6 +41,7 @@ NAME = ft_ping
 SRC_FILES = \
 ft_ping_messages.c	\
 ft_ping_parsing.c	\
+ft_ping_print.c		\
 ft_ping_utils.c		\
 ft_ping.c			\
 main.c				\

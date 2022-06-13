@@ -1,6 +1,8 @@
+#include "ft_ping.h"	/* t_ipv4_header */
 #include "libft.h"		/* putstr_fd */
 #include <stdlib.h>		/* exit */
 #include <stdio.h>		/* printf */
+
 #define BITDUMP_WIDTH 4
 #define HEXDUMP_WIDTH 4
 #define CHARDUMP_WIDTH 16
@@ -12,7 +14,7 @@ void	err_quit(char *msg)
 	exit(1);
 }
 
-void	ft_bitdump(unsigned char *add, unsigned size)
+void	ft_bitdump(t_u8 *add, unsigned size)
 {
 	unsigned	newline;
 
@@ -32,7 +34,7 @@ void	ft_bitdump(unsigned char *add, unsigned size)
 		printf("\n");
 }
 
-void	ft_hexdump(unsigned char *add, unsigned size)
+void	ft_hexdump(t_u8 *add, unsigned size)
 {
 	static const char	base[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8',
 		'9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -54,10 +56,10 @@ void	ft_hexdump(unsigned char *add, unsigned size)
 		printf("\n");
 }
 
-void	ft_chardump(unsigned char *add, unsigned size)
+void	ft_chardump(t_u8 *add, unsigned size)
 {
-	unsigned			newline;
-	unsigned			group;
+	unsigned	newline;
+	unsigned	group;
 
 	newline = 0;
 	group = 0;
@@ -80,4 +82,36 @@ void	ft_chardump(unsigned char *add, unsigned size)
 	}
 	if (newline != 0)
 		printf("\n");
+}
+
+/* swap bytes in 16 bits unsigned integers */
+t_u16	ft_swap16(t_u16 num)
+{
+	return ((t_u16)
+		(((num >> 8) & 0xff) << 0 |
+		((num >> 0) & 0xff) << 8));
+}
+
+/* swap bytes in 32 bits unsigned integers */
+t_u32	ft_swap32(t_u32 num)
+{
+	return (
+		((num >> 24) & 0xff) << 0 |
+		((num >> 16) & 0xff) << 8 |
+		((num >> 8) & 0xff) << 16 |
+		((num >> 0) & 0xff) << 24);
+}
+
+/* return 0 if checksum is valid. Size in bytes */
+t_u16	ft_checksum16(t_u16 *addr, unsigned size)
+{
+	t_u32	res;
+
+	res = 0;
+	if (size % 2 != 0)
+		err_quit("Invalid size for checksum16");
+	size /= 2;
+	for (unsigned i = 0; i < size; ++i)
+		res += addr[i];
+	return (~((res & 0xffff) + (res >> 16)) & 0xffff);
 }
