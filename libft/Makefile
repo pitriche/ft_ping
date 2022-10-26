@@ -38,6 +38,7 @@ ft_putstr.c			\
 ft_putnbr_base_fd.c	\
 ft_putnbr.c			\
 ft_putchar_fd.c		\
+ft_strdup.c			\
 
 OBJ_DIR = obj/
 OBJ = $(addprefix $(OBJ_DIR), $(SRC:.c=.o))

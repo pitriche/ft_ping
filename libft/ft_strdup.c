@@ -1,22 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_putstr_fd.c                                     :+:      :+:    :+:   */
+/*   ft_strdup.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: user42 <user42@student.42.fr>              +#+  +:+       +#+        */
+/*   By: pitriche <pitriche@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/11/24 14:40:28 by pitriche          #+#    #+#             */
-/*   Updated: 2021/04/18 14:49:19 by user42           ###   ########.fr       */
+/*   Updated: 2022/07/12 15:49:19 by pitriche         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft.h"
-#include <unistd.h>
+#include <stdlib.h>
 
-void	ft_putchar_fd(char c, int fd)
+char	*ft_strdup(char *str)
 {
-	size_t size;
+	char		*tmp;
+	unsigned	len;
 
-	size = (size_t)write(fd, &c, 1); /* to silence warnings */
-	(void)size;
+	for (len = 0; str[len]; ++len)
+		;
+	tmp = (char *)malloc(len + 1);
+	for (len = 0; str[len]; ++len)
+		tmp[len] = str[len];
+	tmp[len] = 0;
+	return (tmp);
 }

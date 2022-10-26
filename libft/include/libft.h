@@ -13,7 +13,7 @@
 #ifndef LIBFT_H
 # define LIBFT_H
 
-# include <stddef.h>	// size_t
+# include <stddef.h>	/* size_t */
 
 void			ft_bzero(void *addr, size_t size);
 void			*ft_memmove(void *dest, const void *src, size_t n);
@@ -22,6 +22,7 @@ void			ft_putstr_fd(char const *str, int fd);
 void			ft_putnbr_base_fd(long nb, const char *base_char, int fd);
 void			ft_putnbr(long nb);
 void			ft_putchar_fd(char c, int fd);
+char			*ft_strdup(char *str);
 
 /*
 # include <string.h>
@@ -74,7 +75,6 @@ void			ft_putchar_fd(char c, int fd);
 void			ft_putnbr_fd(int n, int fd);
 void			*ft_memchr(const void *s, int c, size_t n);
 int				ft_memcmp(const void *s1, const void *s2, size_t n);
-char			*ft_strdup(const char *s);
 char			*ft_strcpy(char *dest, const char *src);
 char			*ft_strncpy(char *dest, const char *src, size_t n);
 char			*ft_strcat(char *dest, const char *src);

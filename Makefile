@@ -23,8 +23,9 @@ RESET   = \033[0m
 
 CC = gcc
 
+FL_DEBUG = -g3 -fsanitize=address
 FL_OPTI = -O2 -flto
-FLAGS = -Wall -Wextra -Wconversion -Wuninitialized $(FL_OPTI)
+FLAGS = -Wall -Wextra -Wconversion -Wuninitialized $(FL_OPTI) $(FL_DEBUG)
 LFLAGS = $(FLAGS)
 CFLAGS = -c $(FLAGS)
 

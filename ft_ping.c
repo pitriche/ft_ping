@@ -1,43 +1,25 @@
 #include <sys/socket.h>	/* socket */
 #include <netinet/in.h>	/* IPPROTO_ICMP */
-#include <unistd.h>		/* close */
+#include <unistd.h>		/* close, alarm, signal */
 #include <stdio.h>		/* printf */
 #include <stdlib.h>		/* malloc */
+#include <signal.h>		/* signal */
 #include "libft.h"		/* ft_bzero */
 #include "ft_ping.h"	/* all */
 
 t_ping	all; /* global variable for ping */
 
-void	ft_ping(int ac, char **av)
+void	ft_ping_send_packet(int sig)
 {
-	t_icmp_packet	pack;
-	
-	ft_ping_parse_flags(ac, av, &all.flags);
-	if ((all.sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
-		err_quit("Can't open socket");
-	printf("%d\n", all.sock);
+	t_icmp_packet		pack;
+	struct sockaddr_in	addr;
+	struct msghdr		msg;
+	long int			ret;
 
+	(void)sig;
 
 	/* init icmp packet for echo request */
 	ft_bzero(&pack, sizeof(t_icmp_packet));	/* zero all fields */
-
-	/* ipv4 header initialisation */
-	// pack.ipv4.version_ihl	|= 4 << 4;	/* ip version 4 */
-	// pack.ipv4.version_ihl	|= 5;		/* 5 * 4 bytes header length */
-	// pack.ipv4.dscp_ecn		|= 16 << 2;	/* DSCP 010000 (16) for ping */
-	// pack.ipv4.dscp_ecn		|= 0;		/* no ECN */
-	// pack.ipv4.packet_length	= sizeof(t_icmp_packet);
-	// pack.ipv4.identification = 0;		/* no identification */
-	// pack.ipv4.flag_offset	|= 0 << 13;	/* no flags */
-	// pack.ipv4.flag_offset	|= 0;		/* no fragment offset */
-	// pack.ipv4.ttl			= 64;		/* time to live, default 64 */
-	// pack.ipv4.protocol		= 1;		/* 1 = ICMP */
-	// pack.ipv4.header_checksum = 0;		/* checksum computed later */
-	// pack.ipv4.source_ip		= 0x0;
-	// pack.ipv4.dest_ip		= 0x0;
-	// ft_bitdump((unsigned char *)&pack, sizeof(t_ipv4_header));
-	// pack.ipv4.header_checksum = ft_checksum16((short *)&pack.ipv4, 10);
-	// printf("checksum>%x\n", ft_checksum16((short *)&pack.ipv4, 10));
 
 	/*
 	sendto arguments:
@@ -54,81 +36,88 @@ void	ft_ping(int ac, char **av)
 	size dest addr(4o):	sizeof(struct sockaddr_in)	-> 16 octets
 	*/
 
+	/* construct packet */
 	pack.icmp.type		= 8;	/* echo request */
 	pack.icmp.code		= 0;	/* no code */
 	pack.icmp.checksum	= 0;	/* checksum computed later */
 	pack.icmp.pid		= ft_swap16((t_u16)getpid());
-	pack.icmp.sequence	= ft_swap16(1);	/* first packet sent is 1 (lso first) */
+	pack.icmp.sequence	= ft_swap16(++all.stat.packet_sent);
 	ft_memmove(pack.payload, "Alors on sniffe mes packets ? iiiiiiiiiiiiiiiiiii"
 		"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", 56);
-	pack.icmp.checksum = ft_checksum16((unsigned short *)&pack,
-		sizeof(t_icmp_packet));
+	pack.icmp.checksum = ft_checksum16((t_u16 *)&pack, sizeof(t_icmp_packet));
 
-	// ft_bitdump((unsigned char *)&pack, sizeof(t_icmp_packet));
-	// pack.payload[55] -= 1;
-	// pack.payload[53] += 1;
-	// printf("checkchecksum>%x\n", ft_checksum16((unsigned short *)&pack,
-	// 	sizeof(t_icmp_packet)));
-	ft_chardump((unsigned char *)&pack, sizeof(t_icmp_packet));
-
-
-	struct sockaddr_in	addr;
+	/* send packet */
 	ft_bzero(&addr, sizeof(struct sockaddr_in));	/* zero all fields */
 	addr.sin_family			= AF_INET;				/* 2, ipv4 */
 	addr.sin_port			= 0;					/* no port used */
-	/* least significant octets are first, but within octets it's msb first */
-	// addr.sin_addr.s_addr	= (192 << 0) | (168 << 8) | (56 << 16) | (105 << 24);
-	addr.sin_addr.s_addr	= (93 << 0) | (184 << 8) | (216 << 16) | (34 << 24);
-	
+	addr.sin_addr.s_addr	= all.dest.ip;
 
+	all.stat.last = ft_timestamp();
 	if (sendto(all.sock, &pack, sizeof(pack), 0,
 		(struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
-		err_quit("failed to send packet, temporary, remove this");
-	else
-		printf("packet sent\n");
+		err_quit("failed to send packet");
 
-	struct msghdr	msg;
+	/* receive packet */
 	ft_bzero(&msg, sizeof(struct msghdr));	/* zero all fields */
-	// msg.msg_name = malloc(10000);
-	// msg.msg_namelen = 10000;
 	msg.msg_iov = malloc(sizeof(struct iovec));
-	msg.msg_iovlen = sizeof(struct iovec);
-	msg.msg_iov->iov_base = malloc(10000);
-	msg.msg_iov->iov_len = 10000;
-	// msg.msg_control = malloc(10000);
-	// msg.msg_controllen = 10000;
+	msg.msg_iovlen = 1;
+	msg.msg_flags = 0;
+	msg.msg_iov->iov_base = malloc(1000);
+	msg.msg_iov->iov_len = 84;	/* received packet expected to be 84 */
 
-	long int	ret;
 	if ((ret = recvmsg(all.sock, &msg, MSG_TRUNC)) < 0)
-		err_quit("failed to recieve packet, temporary, remove this");
+		err_quit("failed to recieve packet");
 
-	printf("packet recieved, ret>%ld\n", ret);
-	// ft_hexdump((t_u8 *)&msg, sizeof(struct msghdr));
-	// printf("field name> %p\n", msg.msg_name);
-	// printf(" 	-> len %d\n", msg.msg_namelen);
-	// printf(" -> field name > >%lx<\n\n", *(unsigned long *)msg.msg_name);
-	// printf("field iov > %p\n", msg.msg_iov);
-	// printf(" 	-> len %ld\n", msg.msg_iovlen);
-	// printf(" -> field iov > %p\n", msg.msg_iov->iov_base);
-	// printf(" ->		-> len %ld\n\n", msg.msg_iov->iov_len);
-	// ft_hexdump((t_u8 *)msg.msg_iov->iov_base, 84);
-	// printf("field cont> %p\n", msg.msg_control);
-	// printf(" 	-> len %d\n\n", msg.msg_controllen);
-	// printf("field flags> %d\n", msg.msg_flags);
+	all.stat.delta = ft_timestamp() - all.stat.last;
+	all.stat.all_delta[all.stat.ad_size++] = all.stat.delta;
+	all.stat.sum_delta += all.stat.delta;
+		if (all.stat.delta < all.stat.min_delta)
+		all.stat.min_delta = all.stat.delta;
+	if (all.stat.delta > all.stat.max_delta)
+		all.stat.max_delta = all.stat.delta;
+	++all.stat.packet_recvd;
 
 	if (ret >= 84)
 	{
 		t_ipv4_icmp_packet	*answ;
 		answ = (t_ipv4_icmp_packet *)msg.msg_iov->iov_base;
-		printf("\n\n");
-		ft_ipv4_header_print(&answ->ipv4);
-		printf("\n");
-		ft_icmp_header_print(&answ->icmp);
-		printf("\n\n");
-		printf("\n\n");
-		ft_ping_packet_print(answ);
+		ft_ping_packet_print(answ, &all.dest);
 	}
 
+	/* call for next packet to be sent */
+	alarm(1);
 
+	free(msg.msg_iov->iov_base);
+	free(msg.msg_iov);
+}
+
+void	ft_ping(int ac, char **av)
+{
+	
+	ft_ping_parse_flags(ac, av, &all.flags);
+	ft_ping_parse_address(ac, av, &all.dest);
+	if ((all.sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
+		err_quit("Can't open socket");
+
+	all.stat.begin = ft_timestamp();
+	all.stat.last = all.stat.begin;
+	all.stat.min_delta = (t_u64)-1L;
+	all.stat.all_delta = malloc(sizeof(t_u64) * (1 << 16));
+
+	ft_ping_header_print(&all.dest);
+
+	/* packet send and recieve loop */
+
+	signal(SIGALRM, ft_ping_send_packet);
+	signal(SIGINT, ft_ping_tailer_print);
+	ft_ping_send_packet(0);
+
+	/* halt execution, everything handled by signals */
+	for (;;);
+
+	/* free before exit (useless and never called) */
 	close(all.sock);
+	free(all.stat.all_delta);
+	if (all.dest.ptr_record)
+		free(all.dest.ptr_record);
 }
