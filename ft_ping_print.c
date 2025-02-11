@@ -119,22 +119,18 @@ void	ft_ping_header_print(t_destination *dest)
 		ft_ipv4_print(ft_swap32(dest->ip));
 	printf(" (");
 	ft_ipv4_print(ft_swap32(dest->ip));
-	printf(") 56(84) bytes of data.\n");
+	printf("): 56 data bytes\n");
 }
 
-void	ft_ping_packet_print(t_ipv4_icmp_packet *pack, t_destination *dest)
+void	ft_ping_packet_print(t_ipv4_icmp_packet *pack)
 {
 	printf("%hd bytes ", ft_swap16(pack->ipv4.packet_length) -
 		(t_u16)sizeof(t_ipv4_header));
 	printf("from ");
-	if (!dest->is_ip)
-		printf("%s (", dest->ptr_record);
 	ft_ipv4_print(ft_swap32(pack->ipv4.source_ip));
-	if (!dest->is_ip)
-		printf(")");
 	printf(": icmp_seq=%hd ", ft_swap16(pack->icmp.sequence));
 	printf("ttl=%hhd ", pack->ipv4.ttl);
-	printf("time=%.2f ms\n", (float)all.stat.delta / 1000.0f);
+	printf("time=%.3f ms\n", (float)all.stat.delta / 1000.0f);
 }
 
 /* returns mdev in ms as float */
@@ -160,24 +156,23 @@ void	ft_ping_tailer_print(int sig)
 	t_u64	average;
 
 	(void)sig;
-	printf("\n--- ");
+	printf("--- ");
 	if (!all.dest.is_ip)
 		printf("%s", all.dest.canon_name);
 	else
 		ft_ipv4_print(ft_swap32(all.dest.ip));
 	printf(" ping statistics ---\n");
-	printf("%hu packets transmitted, %hu received, ", all.stat.packet_sent,
+	printf("%hu packets transmitted, %hu packets received, ", all.stat.packet_sent,
 		all.stat.packet_recvd);
 	if (all.stat.packet_sent == all.stat.packet_recvd)
-		printf("0%% packet loss");
+		printf("0%% packet loss\n");
 	else
-		printf("%u%% packet loss", (all.stat.packet_sent * 100) /
+		printf("%u%% packet loss\n", (all.stat.packet_sent * 100) /
 		(all.stat.packet_sent - all.stat.packet_recvd));
-	printf(", time %lums\n", (all.stat.last - all.stat.begin) / 1000);
 
 	/* ligne RTT */
 	average = all.stat.sum_delta / all.stat.packet_recvd;
-	printf("rtt min/avg/max/mdev = ");
+	printf("round-trip min/avg/max/stddev = ");
 	printf("%.3f/", (float)all.stat.min_delta / 1000.0f);
 	printf("%.3f/", (float)average / 1000.0f);
 	printf("%.3f/", (float)all.stat.max_delta / 1000.0f);

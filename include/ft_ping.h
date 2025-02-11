@@ -128,7 +128,7 @@ void	ft_icmp_header_print(t_icmp_header *head);
 
 void	ft_ipv4_print(t_u32 addr);
 void	ft_ping_header_print(t_destination *dest);
-void	ft_ping_packet_print(t_ipv4_icmp_packet *pack, t_destination *dest);
+void	ft_ping_packet_print(t_ipv4_icmp_packet *pack);
 void	ft_ping_tailer_print(int sig);
 
 void	ft_ping_parse_flags(int ac, char **av, t_flags *flags);

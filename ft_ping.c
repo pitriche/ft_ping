@@ -41,7 +41,7 @@ void	ft_ping_send_packet(int sig)
 	pack.icmp.code		= 0;	/* no code */
 	pack.icmp.checksum	= 0;	/* checksum computed later */
 	pack.icmp.pid		= ft_swap16((t_u16)getpid());
-	pack.icmp.sequence	= ft_swap16(++all.stat.packet_sent);
+	pack.icmp.sequence	= ft_swap16(all.stat.packet_sent++);
 	ft_memmove(pack.payload, "Alors on sniffe mes packets ? iiiiiiiiiiiiiiiiiii"
 		"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", 56);
 	pack.icmp.checksum = ft_checksum16((t_u16 *)&pack, sizeof(t_icmp_packet));
@@ -81,7 +81,7 @@ void	ft_ping_send_packet(int sig)
 	{
 		t_ipv4_icmp_packet	*answ;
 		answ = (t_ipv4_icmp_packet *)msg.msg_iov->iov_base;
-		ft_ping_packet_print(answ, &all.dest);
+		ft_ping_packet_print(answ);
 	}
 
 	/* call for next packet to be sent */
