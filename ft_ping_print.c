@@ -129,7 +129,7 @@ void	ft_ping_packet_print(t_ipv4_icmp_packet *pack)
 	printf("from ");
 	ft_ipv4_print(ft_swap32(pack->ipv4.source_ip));
 	printf(": icmp_seq=%hd ", ft_swap16(pack->icmp.sequence));
-	printf("ttl=%hhd ", pack->ipv4.ttl);
+	printf("ttl=%hhu ", pack->ipv4.ttl);
 	printf("time=%.3f ms\n", (float)all.stat.delta / 1000.0f);
 }
 
@@ -151,7 +151,7 @@ float	ft_mdev(t_stat *stat)
 }
 
 /* print tailer and exit */
-void	ft_ping_tailer_print(int sig)
+void	ft_ping_trailer_print(int sig)
 {
 	t_u64	average;
 
@@ -169,6 +169,8 @@ void	ft_ping_tailer_print(int sig)
 	else
 		printf("%u%% packet loss\n", (all.stat.packet_sent * 100) /
 		(all.stat.packet_sent - all.stat.packet_recvd));
+
+	/* don't print round trip line if packet loss is 100% */
 	if (all.stat.packet_recvd == 0)
 		exit(0);
 

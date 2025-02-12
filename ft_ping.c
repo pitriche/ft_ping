@@ -108,7 +108,7 @@ void	ft_ping(int ac, char **av)
 	/* packet send and recieve loop */
 
 	signal(SIGALRM, ft_ping_send_packet);
-	signal(SIGINT, ft_ping_tailer_print);
+	signal(SIGINT, ft_ping_trailer_print);
 	ft_ping_send_packet(0);
 
 	/* halt execution, everything handled by signals */
