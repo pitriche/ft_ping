@@ -6,6 +6,8 @@
 #include <signal.h>		/* signal */
 #include "libft.h"		/* ft_bzero */
 #include "ft_ping.h"	/* all */
+#include <sys/time.h>	/* struct timeval */
+#include <errno.h>
 
 t_ping	all; /* global variable for ping */
 
@@ -18,23 +20,13 @@ void	ft_ping_send_packet(int sig)
 
 	(void)sig;
 
+	struct timeval timeout;
+	timeout.tv_sec = 1;
+	timeout.tv_usec = 0;
+	setsockopt(all.sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
 	/* init icmp packet for echo request */
 	ft_bzero(&pack, sizeof(t_icmp_packet));	/* zero all fields */
-
-	/*
-	sendto arguments:
-	socket fd(4o):		sock			-> ok
-	packet data(~o):	&pack			-> ICMP head + payload (no ipv4 header)
-	packet size(8o):	sizeof(pack)	-> ok
-	sendto flags(4o):	0				-> ok
-	
-	dest address(16o):	(struct sockaddr*)addr	-> struct sockaddr_in
-		-> family(2o):	2 (INET ipv4)
-		-> port(2o):	0 (no port specified)
-		-> addr(4o):	192.168.56.105 (concatenated as an uint32)
-		-> pad(8o)
-	size dest addr(4o):	sizeof(struct sockaddr_in)	-> 16 octets
-	*/
 
 	/* construct packet */
 	pack.icmp.type		= 8;	/* echo request */
@@ -55,9 +47,12 @@ void	ft_ping_send_packet(int sig)
 	all.stat.last = ft_timestamp();
 	if (sendto(all.sock, &pack, sizeof(pack), 0,
 		(struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
-		err_quit("failed to send packet");
+			err_quit("failed to send packet");
 
-	/* receive packet */
+	/* call for next packet to be sent */
+	alarm(1);
+
+	/* receive response packet */
 	ft_bzero(&msg, sizeof(struct msghdr));	/* zero all fields */
 	msg.msg_iov = malloc(sizeof(struct iovec));
 	msg.msg_iovlen = 1;
@@ -65,28 +60,32 @@ void	ft_ping_send_packet(int sig)
 	msg.msg_iov->iov_base = malloc(1000);
 	msg.msg_iov->iov_len = 84;	/* received packet expected to be 84 */
 
-	if ((ret = recvmsg(all.sock, &msg, MSG_TRUNC)) < 0)
-		err_quit("failed to recieve packet");
 
-	all.stat.delta = ft_timestamp() - all.stat.last;
-	all.stat.all_delta[all.stat.ad_size++] = all.stat.delta;
-	all.stat.sum_delta += all.stat.delta;
-		if (all.stat.delta < all.stat.min_delta)
-		all.stat.min_delta = all.stat.delta;
-	if (all.stat.delta > all.stat.max_delta)
-		all.stat.max_delta = all.stat.delta;
-	++all.stat.packet_recvd;
-
-	if (ret >= 84)
+	if ((ret = recvmsg(all.sock, &msg, 0)) < 0)
 	{
-		t_ipv4_icmp_packet	*answ;
-		answ = (t_ipv4_icmp_packet *)msg.msg_iov->iov_base;
-		ft_ping_packet_print(answ);
+		if (errno != EAGAIN)
+			err_quit("failed to recieve packet");
+		printf("failed with code: %d errno %d\n", ret, errno);
 	}
+	else
+	{
+		/* if packet was correctly received */
+		all.stat.delta = ft_timestamp() - all.stat.last;
+		all.stat.all_delta[all.stat.ad_size++] = all.stat.delta;
+		all.stat.sum_delta += all.stat.delta;
+			if (all.stat.delta < all.stat.min_delta)
+			all.stat.min_delta = all.stat.delta;
+		if (all.stat.delta > all.stat.max_delta)
+			all.stat.max_delta = all.stat.delta;
+		++all.stat.packet_recvd;
 
-	/* call for next packet to be sent */
-	alarm(1);
-
+		if (ret >= 84)
+		{
+			t_ipv4_icmp_packet	*answ;
+			answ = (t_ipv4_icmp_packet *)msg.msg_iov->iov_base;
+			ft_ping_packet_print(answ);
+		}
+	}
 	free(msg.msg_iov->iov_base);
 	free(msg.msg_iov);
 }
@@ -116,8 +115,8 @@ void	ft_ping(int ac, char **av)
 	for (;;);
 
 	/* free before exit (useless and never called) */
-	close(all.sock);
-	free(all.stat.all_delta);
-	if (all.dest.ptr_record)
-		free(all.dest.ptr_record);
+// 	close(all.sock);
+// 	free(all.stat.all_delta);
+// 	if (all.dest.ptr_record)
+// 		free(all.dest.ptr_record);
 }

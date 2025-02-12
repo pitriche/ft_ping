@@ -18,7 +18,10 @@ void	ft_ping_DNS_resoltion(char *addr, t_destination *dest)
 	hints.ai_flags = AI_CANONNAME;
 	hints.ai_family = AF_INET;	/* not neccesary, but should be here */
 	if ((ret = getaddrinfo(addr, 0, &hints, &res)))
-		ft_ping_problem(addr, (char *)gai_strerror(ret));
+	{
+		ft_putstr_fd("ping: unknown host\n", 2);
+		exit(1);
+	}
 	dest->ptr_record = malloc(10000);
 	if ((ret = getnameinfo(res->ai_addr, res->ai_addrlen, dest->ptr_record,
 				10000, 0, 0, 0)))

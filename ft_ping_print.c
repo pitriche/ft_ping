@@ -169,6 +169,8 @@ void	ft_ping_tailer_print(int sig)
 	else
 		printf("%u%% packet loss\n", (all.stat.packet_sent * 100) /
 		(all.stat.packet_sent - all.stat.packet_recvd));
+	if (all.stat.packet_recvd == 0)
+		exit(0);
 
 	/* ligne RTT */
 	average = all.stat.sum_delta / all.stat.packet_recvd;
